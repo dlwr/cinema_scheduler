@@ -1,86 +1,96 @@
 # -*- coding: utf-8 -*-
 require 'rubygems'
+require 'mechanize'
 require 'icalendar'
 require 'kconv'
 
-class Integer
-  def ordinalize
-    suffix =
-      if (fd=abs%10).between?(1,3) && !abs.between?(11,13)
-        %w(_ st nd rd)[fd]
-      else
-        'th'
-      end
-    "#{self}" + suffix
-  end
-end
+theater = Hash.new
+theater["キネカ大森"] = "th197"
+theater["ヒューマントラストシネマ渋谷"] = "th56"
+theater["銀座シネパトス"] = "th122"
+theater["新宿武蔵野館"] = "th2"
+theater["ユナイテッド・シネマ豊洲"] = "th364"
+movie_walker_plus_url = "http://movie.walkerplus.com"
 
-cal = Icalendar::Calendar.new
+agent = Mechanize.new
 
-theater_name = ARGV[0].split(".")[0]
-open(ARGV[0]) { |inFile|
-  if theater_name.index("シネマヴェーラ渋谷") != nil
-    location = theater_name + " 東京都渋谷区円山町1-5 Q-AXビル 4F"
-  elsif theater_name.index("ヒューマントラストシネマ渋谷")
-    location = theater_name + " 東京都渋谷区渋谷1-23−16 cocoti 7-8F‎"
-  elsif theater_name.index("銀座シネパトス")
-    location = theater_name + " 東京都中央区銀座4-8-7"
-  elsif theater_name.index("ギンレイホール")
-    location = theater_name + " 東京都新宿区神楽坂2-19 銀鈴会館 1Ｆ"
-  elsif theater_name.index("キネカ大森")
-    location = theater_name + " 東京都品川区南大井6-27-25"
-  elsif theater_name.index("三軒茶屋シネマ")
-    location = theater_name + " 東京都世田谷区三軒茶屋2-14-6"
-  elsif theater_name.index("三軒茶屋中央劇場")
-    location = theater_name + " 東京都世田谷区三軒茶屋2-14-5"
-  elsif theater_name.index("早稲田松竹")
-    location = theater_name + " 東京都新宿区高田馬場1-5-16"
-  elsif theater_name.index("シネマ豊洲")
-    location = theater_name + " 東京都江東区豊洲2-4-9 三井ショッピングパーク アーバンドック ららぽーと豊洲3F"
-  else
-    location = nil
-  end
-
-  while true
-    begin
-      title = inFile.gets.chop
-      length = inFile.gets.to_i
-      description = ""
-      while (line = inFile.gets).index("descend") == nil
-        description << line
-      end
-      while true
-        release_date = inFile.gets.chop.split("/").map { |i| i.to_i }
-        release_date.unshift(2013) if release_date.size == 2
-        days = inFile.gets.to_i
-        times = inFile.gets.to_i
-        showtimes = []
-        times.times { |i|
-          showtimes << inFile.gets.chop.split(":").map { |i| i.to_i }
-        }
-
-        showtimes.each { |showtime|
-          cal.event do
-            startTime = DateTime.new(release_date[0], release_date[1], release_date[2],
-                                 showtime[0], showtime[1])
-            endTime = startTime + Rational(1, 24 * 60) * length
-            dtstart startTime, {'TZID' => 'Asia/Tokyo'}
-            dtend endTime, {'TZID' => 'Asia/Tokyo'}
-            summary title
-            description description
-            location location
-            add_rrule "FREQ=DAILY;COUNT=#{days}"
-          end
-        }
-        break if inFile.gets.index("end")
-      end
-      break if inFile.gets.index("end")
-    rescue
-      p title
-    else
+theater.each {|theater_name, url|
+  cal = Icalendar::Calendar.new
+  # getメソッドでアクセス
+  agent.get(movie_walker_plus_url + '/' + url + '/schedule.html')
+  main_page = agent.page
+  # 住所
+  address = main_page.search('//*[@id="askTheaterPageLink"]/table/tr[1]/td/text()').inner_text
+  # 上映中（予定)の映画情報をすべて取得
+  all_movies = agent.page.search("div[@class='movie']")
+  all_movies.each {|movie|
+    # 映画のタイトル
+    title = movie.search("h2").inner_text
+    # 映画の詳細情報ページを取得
+    info_link = movie.search('h2').search('a')[0]["href"]
+    info_page = agent.get(movie_walker_plus_url + info_link)
+    # 映画概略(description)
+    description = info_page.search('//*[@id="mainInfo"]/p/text()').inner_text
+    if (description == "")
+      description = info_page.search('//*[@id="mainInfoNoImage"]/p/text()').inner_text
     end
-  end
-}
-File.open(theater_name + ".ics", "w+b") { |f|
-  f.write(cal.to_ical)
+    if (description == "")
+      puts "infomeation of " + title + "@" + theater_name + " missing"
+    end
+    # 映画上映時間（長さ）
+    runtime = info_page.search('//*[@id="infoBox"]/table/tr[4]/td/span').inner_text
+    if runtime == ""
+      runtime = info_page.search('//*[@id="infoBox"]/table/tr[5]/td/span').inner_text
+    end
+    if runtime == ""
+      runtime = info_page.search('//*[@id="infoBox"]/table/tr[3]/td/span').inner_text
+    end
+    if runtime == ""
+      puts 'runtime of "' + title + "@" + theater_name + '" missing.'
+    end
+    # スケジュール詳細ページを取得
+    schedule = Hash.new
+    schedule_link = movie.search("a").last['href']
+    schedule_page = agent.get(movie_walker_plus_url + schedule_link)
+    schedule_page.search('//*[@id="pageHeaderWrap"]/div[2]/div[2]/table').each {|schedule_table|
+      schedule_table.xpath('tr')[0].xpath('th').each {|th|
+        schedule[th["class"]] = th.inner_text
+      }
+      schedule_table.xpath('tr')[2].xpath('td').each {|td|
+        week_day = td["class"].split(" ")[0]
+        schedule[schedule[week_day]] = td.inner_text.gsub(/\(.*\)/,'').split(" ")
+        schedule.delete(week_day)
+      }
+    }
+    schedule.each {|day, showtimes|
+      day = day.split("/")
+      showtimes.each {|time|
+        next if time.index("劇場問合") != nil || time == ""
+        time = time.split(":")
+        midnight = false
+        if time[0].to_i >= 24
+          time[0] = (time[0].to_i - 24).to_s
+          midnight = true
+        end
+        cal.event do
+          begin
+            start_time = DateTime.new(2013, day[0].to_i, day[1].to_i, time[0].to_i, time[1].to_i)
+            start_time = start_time + 1 if midnight
+          rescue
+            puts "crash at " + title + "@" + theater_name + "scheduling"
+            next
+          end
+          end_time = start_time + Rational(1, 24 * 60) * runtime.to_i
+          dtstart start_time, {'TZID' => 'Asia/Tokyo'}
+          dtend end_time, {'TZID' => 'Asia/Tokyo'}
+          summary title
+          description description
+          location address
+        end
+      }
+    }
+  }
+  File.open(theater_name + ".ics", "w+b") { |f|
+    f.write(cal.to_ical)
+  }
 }
