@@ -16,3 +16,13 @@ tmp
 .yardoc
 _yardoc
 doc/
+
+# my setting
+*~
+data/
+yesterday
+*.log
+.google-api.yaml
+custom_runtime
+do.sh
+gcal_sample.rb
