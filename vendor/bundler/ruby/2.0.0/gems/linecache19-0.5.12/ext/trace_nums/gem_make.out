@@ -1,0 +1,47 @@
+/usr/local/bin/ruby extconf.rb 
+checking for vm_core.h... no
+/home/dlwr/work/develop/cinema_scheduler_gcal/vendor/bundler/ruby/2.0.0/gems/ruby_core_source-0.1.5/lib/ruby_core_source.rb:39:in `create_makefile_with_core': Use RbConfig instead of obsolete and deprecated Config.
+/home/dlwr/work/develop/cinema_scheduler_gcal/vendor/bundler/ruby/2.0.0/gems/ruby_core_source-0.1.5/lib/ruby_core_source.rb:39:in `create_makefile_with_core': Use RbConfig instead of obsolete and deprecated Config.
+checking for vm_core.h... no
+*** extconf.rb failed ***
+Could not create Makefile due to some reason, probably lack of necessary
+libraries and/or headers.  Check the mkmf.log file for more details.  You may
+need configuration options.
+
+Provided configuration options:
+	--with-opt-dir
+	--without-opt-dir
+	--with-opt-include
+	--without-opt-include=${opt-dir}/include
+	--with-opt-lib
+	--without-opt-lib=${opt-dir}/lib
+	--with-make-prog
+	--without-make-prog
+	--srcdir=.
+	--curdir
+	--ruby=/usr/local/bin/ruby
+	--with-ruby-dir
+	--without-ruby-dir
+	--with-ruby-include
+	--without-ruby-include=${ruby-dir}/include
+	--with-ruby-lib
+	--without-ruby-lib=${ruby-dir}/
+/home/dlwr/work/develop/cinema_scheduler_gcal/vendor/bundler/ruby/2.0.0/gems/ruby_core_source-0.1.5/lib/contrib/uri_ext.rb:268:in `block (2 levels) in read': Looking for http://ftp.ruby-lang.org/pub/ruby/1.9/ruby-2.0.0-p0.tar.gz and all I got was a 404! (URI::NotFoundError)
+	from /usr/local/lib/ruby/2.0.0/net/http.rb:1412:in `block (2 levels) in transport_request'
+	from /usr/local/lib/ruby/2.0.0/net/http/response.rb:162:in `reading_body'
+	from /usr/local/lib/ruby/2.0.0/net/http.rb:1411:in `block in transport_request'
+	from /usr/local/lib/ruby/2.0.0/net/http.rb:1402:in `catch'
+	from /usr/local/lib/ruby/2.0.0/net/http.rb:1402:in `transport_request'
+	from /usr/local/lib/ruby/2.0.0/net/http.rb:1375:in `request'
+	from /usr/local/lib/ruby/2.0.0/net/http.rb:1368:in `block in request'
+	from /usr/local/lib/ruby/2.0.0/net/http.rb:851:in `start'
+	from /usr/local/lib/ruby/2.0.0/net/http.rb:1366:in `request'
+	from /home/dlwr/work/develop/cinema_scheduler_gcal/vendor/bundler/ruby/2.0.0/gems/ruby_core_source-0.1.5/lib/contrib/uri_ext.rb:239:in `block in read'
+	from /home/dlwr/work/develop/cinema_scheduler_gcal/vendor/bundler/ruby/2.0.0/gems/ruby_core_source-0.1.5/lib/contrib/uri_ext.rb:286:in `connect'
+	from /home/dlwr/work/develop/cinema_scheduler_gcal/vendor/bundler/ruby/2.0.0/gems/ruby_core_source-0.1.5/lib/contrib/uri_ext.rb:234:in `read'
+	from /home/dlwr/work/develop/cinema_scheduler_gcal/vendor/bundler/ruby/2.0.0/gems/ruby_core_source-0.1.5/lib/contrib/uri_ext.rb:128:in `download'
+	from /home/dlwr/work/develop/cinema_scheduler_gcal/vendor/bundler/ruby/2.0.0/gems/ruby_core_source-0.1.5/lib/ruby_core_source.rb:55:in `block in create_makefile_with_core'
+	from /usr/local/lib/ruby/2.0.0/tempfile.rb:324:in `open'
+	from /home/dlwr/work/develop/cinema_scheduler_gcal/vendor/bundler/ruby/2.0.0/gems/ruby_core_source-0.1.5/lib/ruby_core_source.rb:51:in `create_makefile_with_core'
+	from extconf.rb:19:in `<main>'
+Requesting http://ftp.ruby-lang.org/pub/ruby/1.9/ruby-2.0.0-p0.tar.gz
