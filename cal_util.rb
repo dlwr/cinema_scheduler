@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'google/api_client'
 require 'yaml'
+require 'ruby-debug'
 require_relative 'theater'
 
 oauth_yaml = YAML.load_file('.google-api.yaml')
@@ -20,34 +21,38 @@ service = client.discovered_api('calendar', 'v3')
 
 if $theater[ARGV[0]]
   id = $theater[ARGV[0]][:cal_id]
-  result = client.execute(:api_method => service.events.list,
-                          :parameters => {'calendarId' => id})
   while true
-    events = result.data.items
-    events.each do |e|
-      puts e.summary
-      begin
-        puts "	" + e.start.dateTime.to_s
-      rescue
-       
-      end
-      client.execute(:api_method => service.events.delete,
-                     :parameters =>
-                     {
-                       'calendarId' => id,
-                       'eventId' => e.id,
-                     }
-                     )
-    end
-    if !(page_token = result.data.next_page_token)
-      break
-    end
     result = client.execute(:api_method => service.events.list,
-                            :parameters =>
-                            {
-                              'calendarId' => 'primary',
-                              'pageToken' => page_token,
-                            }
-                            )
+                            :parameters => {'calendarId' => id})
+#    debugger
+    break if result.data.items == []
+    while true
+      events = result.data.items
+      events.each do |e|
+        puts e.summary
+        begin
+          puts "	" + e.start.dateTime.to_s
+        rescue
+
+        end
+        client.execute(:api_method => service.events.delete,
+                       :parameters =>
+                       {
+                         'calendarId' => id,
+                         'eventId' => e.id,
+                       }
+                       )
+      end
+      if !(page_token = result.data.next_page_token)
+        break
+      end
+      result = client.execute(:api_method => service.events.list,
+                              :parameters =>
+                              {
+                                'calendarId' => 'primary',
+                                'pageToken' => page_token,
+                              }
+                              )
+    end
   end
 end

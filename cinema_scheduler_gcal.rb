@@ -5,23 +5,19 @@ require 'icalendar'
 require 'kconv'
 require 'google/api_client'
 require 'yaml'
+require 'open-uri'
+require 'debugger'
 require_relative 'theater'
 
-# theater = Hash.new
-# theater["キネカ大森"] = {:path => "th197", :cal_id => "j8uo3jue9gpfnk4ac5l256ag7g@group.calendar.google.com"}
-# theater["シネマヴェーラ渋谷"] = {:path => "th170", :cal_id => "7vaqlr1585bidb5nh4sbr98qro@group.calendar.google.com"}
-# theater["ヒューマントラストシネマ渋谷"] = {:path => "th56", :cal_id => "ms97jlns9ckfonbqvmu9ivf2u8@group.calendar.google.com"}
-# # theater["飯田橋ギンレイホール"] = "th321"
-# # theater["ユナイテッド・シネマ豊洲"] = "th364"
-# # theater["下高井戸シネマ"] = "th322"
-# # theater["銀座シネパトス"] = "th122"
-# # theater["銀座テアトルシネマ"] = "th507"
-# # theater["三軒茶屋シネマ"] = "th71"
-# # theater["三軒茶屋中央劇場"] = "th569"
-# # theater["新橋文化劇場"] = "th512"
-# # theater["新宿武蔵野館"] = "th2"
-# # theater["新文芸坐"] = "th13"
-# # theater["早稲田松竹"] = "th566"
+def open_without_garble(url)
+  begin
+    html = open(url, "r:binary").read.force_encoding("UTF-8")
+    doc = Nokogiri::HTML(html, nil, 'utf-8')
+  rescue
+    nil
+  end
+  doc
+end
 
 if $theater[ARGV[0]]
   theater = Hash.new
@@ -66,17 +62,21 @@ theater.each {|theater_name, about|
       end
     end
   }
+  # debugger
   File.delete(theater_dir + "yesterday") if FileTest.exist?(theater_dir + "yesterday")
-  File.rename(theater_dir + "up_to_date", "yesterday")
+  File.rename(theater_dir + "up_to_date", theater_dir + "yesterday")
 
   cal = Icalendar::Calendar.new
 
-  agent.get(movie_walker_plus_url + '/' + url + '/schedule.html')
-  main_page = agent.page
+  #  agent.get(movie_walker_plus_url + '/' + url + '/schedule.html')
+  # main_page = agent.page
+  main_page = open_without_garble(movie_walker_plus_url + '/' + url + '/schedule.html')
+  next if main_page == nil
 
   address = main_page.search('//*[@id="askTheaterPageLink"]/table/tr[1]/td/text()').inner_text
 
-  all_movies = agent.page.search("div[@class='movie']")
+  # all_movies = agent.page.search("div[@class='movie']")
+  all_movies = main_page.search("div[@class='movie']")
   all_movies.each {|movie|
     option = movie.search("div[@class='movieTitle']/span").inject("") {|opt, s|
       annot = s.inner_text.gsub(/(\r\n|\r|\n|\s)/, "")
@@ -91,7 +91,8 @@ theater.each {|theater_name, about|
 
     begin
       info_link = movie.search('h2').search('a')[0]["href"]
-      info_page = agent.get(movie_walker_plus_url + info_link)
+      # info_page = agent.get(movie_walker_plus_url + info_link)
+      info_page = open_without_garble(movie_walker_plus_url + info_link)
     rescue
       # puts "		!!!can't find info page!!!"
       description = ""
@@ -104,7 +105,7 @@ theater.each {|theater_name, about|
       if (description == "")
         # puts "infomeation of " + title + "@" + theater_name + " missing"
       end
-      
+
       runtime = info_page.search('//*[@id="infoBox"]/table/tr[4]/td/span').inner_text
       if runtime == ""
         runtime = info_page.search('//*[@id="infoBox"]/table/tr[5]/td/span').inner_text
@@ -138,7 +139,8 @@ theater.each {|theater_name, about|
     end
     schedule = Hash.new
     schedule_link = movie.search("a").last['href']
-    schedule_page = agent.get(movie_walker_plus_url + schedule_link)
+    #    schedule_page = agent.get(movie_walker_plus_url + schedule_link)
+    schedule_page = open_without_garble(movie_walker_plus_url + schedule_link)
     schedule_page.search('//*[@id="pageHeaderWrap"]/div[2]/div[2]/table').each {|schedule_table|
       schedule_table.xpath('tr')[0].xpath('th').each {|th|
         schedule[th["class"]] = th.inner_text
@@ -198,6 +200,7 @@ theater.each {|theater_name, about|
         end
       }
     end
+    # debugger
     if add.size != nil
       add.each {|day, showtimes|
         day = day.split("/")
